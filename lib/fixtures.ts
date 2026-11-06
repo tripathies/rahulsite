@@ -14,6 +14,7 @@ export interface BlogFixture {
   readTime: number;
   publishedAt: string;
   externalUrl?: string;
+  pdfUrl?: string;
   isPlaceholder: true;
 }
 
@@ -46,6 +47,7 @@ export interface AdventureEntry {
   emoji: string;
   lat: number;
   lng: number;
+  pdfUrl?: string;
 }
 
 export interface VideoFixture {
@@ -63,6 +65,8 @@ export interface ProjectFixture {
   description: string;
   tech: string[];
   githubUrl?: string;
+  coverImage?: string;
+  pdfUrl?: string;
   isPlaceholder: true;
 }
 

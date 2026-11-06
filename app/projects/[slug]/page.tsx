@@ -11,6 +11,7 @@ import { projectFixtures } from '@/lib/fixtures';
 import { useContent } from '@/components/admin/useContent';
 import ContentTools from '@/components/admin/ContentTools';
 import ContentBody from '@/components/sections/ContentBody';
+import PdfViewer from '@/components/pdf/PdfViewer';
 
 export default function ProjectSlugPage() {
   const params = useParams();
@@ -68,6 +69,12 @@ export default function ProjectSlugPage() {
                 </span>
               ))}
             </div>
+
+            {project.pdfUrl && (
+              <div style={{ marginBottom: '32px' }}>
+                <PdfViewer url={project.pdfUrl} title={project.title} height="850px" />
+              </div>
+            )}
 
             <div className="glass-card" style={{ padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem' }}>

@@ -11,6 +11,7 @@ import { adventureFixtures } from '@/lib/fixtures';
 import { useContent } from '@/components/admin/useContent';
 import ContentTools from '@/components/admin/ContentTools';
 import ContentBody from '@/components/sections/ContentBody';
+import PdfViewer from '@/components/pdf/PdfViewer';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
@@ -121,6 +122,11 @@ export default function AdventureDetailPage() {
 
             {/* Left: Highlights + Photos */}
             <div className="adv-detail__main">
+              {adventure.pdfUrl && (
+                <div style={{ marginBottom: '32px' }}>
+                  <PdfViewer url={adventure.pdfUrl} title={adventure.destination} height="850px" />
+                </div>
+              )}
               <ContentBody content={adventure.content || ''} videos={adventure.videos} />
 
               {/* Highlights */}

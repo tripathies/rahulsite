@@ -9,7 +9,7 @@ interface MediaUploaderProps {
   onBusyChange?: (busy: boolean) => void;
 }
 
-export default function MediaUploader({ onUploaded, accept = 'image/*,video/mp4', onBusyChange }: MediaUploaderProps) {
+export default function MediaUploader({ onUploaded, accept = 'image/*,video/mp4,application/pdf,.ppt,.pptx', onBusyChange }: MediaUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -17,7 +17,7 @@ export default function MediaUploader({ onUploaded, accept = 'image/*,video/mp4'
   const [success, setSuccess] = useState('');
 
   const helpText = useMemo(
-    () => 'Images: JPG/JPEG/PNG/WebP up to 20MB. Videos: MP4 up to 100MB.',
+    () => 'Images: JPG/PNG/WebP (20MB) • Videos: MP4 (100MB) • Documents: PDF (50MB), PPT/PPTX (100MB)',
     []
   );
 

@@ -11,6 +11,7 @@ import { blogFixtures } from '@/lib/fixtures';
 import { useContent } from '@/components/admin/useContent';
 import ContentTools from '@/components/admin/ContentTools';
 import ContentBody from '@/components/sections/ContentBody';
+import PdfViewer from '@/components/pdf/PdfViewer';
 
 const categoryColors: Record<string, string> = {
   CLOUD_ARCHITECTURE: '#6958FF',
@@ -97,6 +98,13 @@ export default function BlogSlugPage() {
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Cloud Architect &amp; Author</div>
               </div>
             </div>
+
+            {/* Embedded Full PDF Document */}
+            {post.pdfUrl && (
+              <div style={{ marginBottom: '40px' }}>
+                <PdfViewer url={post.pdfUrl} title={post.title} height="850px" />
+              </div>
+            )}
 
             {/* Article Content */}
             <ContentBody content={post.content || ''} photos={post.photos} videos={post.videos} />

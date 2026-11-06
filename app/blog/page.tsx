@@ -7,6 +7,7 @@ import { ArrowLeft, Tag, Clock, Search } from 'lucide-react';
 import Navbar from '@/components/navigation/Navbar';
 import SunsetFooter from '@/components/footer/SunsetFooter';
 import { blogFixtures } from '@/lib/fixtures';
+import { isPresentationUrl } from '@/lib/content';
 import { useContent } from '@/components/admin/useContent';
 import ContentTools from '@/components/admin/ContentTools';
 
@@ -97,7 +98,20 @@ export default function BlogPage() {
                       height: '140px',
                       background: `linear-gradient(135deg, ${categoryColors[post.category]}22, ${categoryColors[post.category]}08)`,
                       position: 'relative',
-                    }}>{post.coverImage && <img src={post.coverImage} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}</div>
+                    }}>
+                      {post.coverImage && <img src={post.coverImage} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                      {post.pdfUrl && (
+                        <span style={{
+                          position: 'absolute', top: 10, right: 10,
+                          background: 'rgba(239, 68, 68, 0.90)', color: '#FFFFFF',
+                          padding: '3px 8px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700,
+                          letterSpacing: '0.04em', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.35)', backdropFilter: 'blur(6px)',
+                        }}>
+                          {isPresentationUrl(post.pdfUrl) ? '📊 PPT' : '📄 PDF'}
+                        </span>
+                      )}
+                    </div>
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span style={{

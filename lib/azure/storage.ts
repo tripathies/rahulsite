@@ -56,11 +56,24 @@ export class AzureStorageClient {
     }
   }
 
+  public static isConfigured(): boolean {
+    return Boolean(process.env.AZURE_STORAGE_CONNECTION_STRING || process.env.AZURE_KEYVAULT_URI || process.env.AZURE_STORAGE_ACCOUNT_URL);
+  }
+
   public static async uploadBlob(
     fileBuffer: Buffer,
     blobName: string,
     mimeType: string
   ): Promise<{ url: string }> {
+    if (!this.isConfigured()) {
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+      await fs.mkdir(uploadDir, { recursive: true });
+      await fs.writeFile(path.join(uploadDir, blobName), fileBuffer);
+      return { url: `/uploads/${encodeURIComponent(blobName)}` };
+    }
+
     const cdnBase = process.env.AZURE_STORAGE_CDN_URL;
     const containerClient = await this.getContainer();
     

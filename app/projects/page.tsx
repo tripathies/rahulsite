@@ -7,6 +7,7 @@ import { GithubIcon } from '@/components/icons/SocialIcons';
 import Navbar from '@/components/navigation/Navbar';
 import SunsetFooter from '@/components/footer/SunsetFooter';
 import { projectFixtures } from '@/lib/fixtures';
+import { isPresentationUrl } from '@/lib/content';
 import { useContent } from '@/components/admin/useContent';
 import ContentTools from '@/components/admin/ContentTools';
 
@@ -61,7 +62,22 @@ export default function ProjectsPage() {
                   transition={{ duration: 0.5, delay: i * 0.1 }}
                   style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}
                 >
-                  {project.coverImage && <img src={project.coverImage} alt={project.title} style={{ width: '100%', height: 200, objectFit: 'cover' }} />}
+                  {project.coverImage && (
+                    <div style={{ position: 'relative', width: '100%', height: 200, borderRadius: '10px', overflow: 'hidden' }}>
+                      <img src={project.coverImage} alt={project.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {project.pdfUrl && (
+                        <span style={{
+                          position: 'absolute', top: 10, right: 10,
+                          background: 'rgba(239, 68, 68, 0.90)', color: '#FFFFFF',
+                          padding: '3px 8px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700,
+                          letterSpacing: '0.04em', display: 'inline-flex', alignItems: 'center', gap: '4px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.35)', backdropFilter: 'blur(6px)',
+                        }}>
+                          {isPresentationUrl(project.pdfUrl) ? '📊 PPT' : '📄 PDF'}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.15rem', fontWeight: 600 }}>
                     {project.title}
                   </h3>

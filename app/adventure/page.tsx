@@ -10,7 +10,7 @@ import SunsetFooter from '@/components/footer/SunsetFooter';
 import { adventureFixtures, AdventureEntry } from '@/lib/fixtures';
 import { useContent } from '@/components/admin/useContent';
 import ContentTools from '@/components/admin/ContentTools';
-import type { ContentRecord } from '@/lib/content';
+import { isPresentationUrl, type ContentRecord } from '@/lib/content';
 
 const FILTERS = ['All', 'Current', 'Remote Work', 'Solo', 'Leisure'] as const;
 type Filter = typeof FILTERS[number];
@@ -65,6 +65,19 @@ function AdventureCard({ entry, index, source, onChanged }: { entry: AdventureEn
           <div className="adv-card__style-chip" style={{ background: style.color + '22', borderColor: style.color + '55' }}>
             <span style={{ color: style.color, fontSize: '0.72rem', fontWeight: 600 }}>{style.label}</span>
           </div>
+
+          {/* PDF Guide badge */}
+          {entry.pdfUrl && (
+            <div style={{
+              position: 'absolute', top: 12, right: 12,
+              background: 'rgba(239, 68, 68, 0.90)', color: '#FFFFFF',
+              padding: '4px 9px', borderRadius: '8px', fontSize: '0.70rem', fontWeight: 700,
+              letterSpacing: '0.04em', display: 'inline-flex', alignItems: 'center', gap: '4px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)', zIndex: 4,
+            }}>
+              {isPresentationUrl(entry.pdfUrl) ? '📊 PPT Guide' : '📄 PDF Guide'}
+            </div>
+          )}
 
           {/* Profile photo pinned at bottom-left — Rahul at this location */}
           <div className="adv-card__profile-pin">

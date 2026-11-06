@@ -3,13 +3,16 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Edit2, Trash2, MapPin, Calendar, ArrowLeft, Search, ChevronRight, Plane } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, Calendar, ArrowLeft, Search, ChevronRight, Plane, FileText } from 'lucide-react';
 import AdminGuard, { getAdminToken } from '@/components/admin/AdminGuard';
 import { adventureFixtures, AdventureEntry } from '@/lib/fixtures';
+import { isPresentationUrl } from '@/lib/content';
+import PdfUploadModal from '@/components/admin/PdfUploadModal';
 
 function AdventuresList() {
   const [cmsEntries, setCmsEntries] = useState<AdventureEntry[]>([]);
   const [search, setSearch] = useState('');
+  const [showPdfModal, setShowPdfModal] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -51,10 +54,23 @@ function AdventuresList() {
           <ArrowLeft size={16} /> Dashboard
         </Link>
         <h1 className="adm-title">Adventures</h1>
+        <button type="button" onClick={() => setShowPdfModal(true)} className="adm-pdf-btn">
+          <FileText size={15} /> Upload PDF / PPT Story
+        </button>
         <Link href="/admin/adventures/new" className="adm-add-btn">
           <Plus size={15} /> Add Adventure
         </Link>
       </header>
+
+      {/* PDF Upload Modal */}
+      {showPdfModal && (
+        <PdfUploadModal
+          type="adventures"
+          isOpen={showPdfModal}
+          onClose={() => setShowPdfModal(false)}
+          onSaved={(item) => setCmsEntries((prev) => [item as unknown as AdventureEntry, ...prev])}
+        />
+      )}
 
       {/* Search */}
       <div className="adm-search-wrap">
@@ -91,6 +107,7 @@ function AdventuresList() {
                   <div className="adm-item__top">
                     <span className="adm-item__flag">{adv.emoji}</span>
                     <h3 className="adm-item__dest">{adv.destination}</h3>
+                    {adv.pdfUrl && <span className="adm-item__pdf">{isPresentationUrl(adv.pdfUrl) ? '📊 PPT' : '📄 PDF'}</span>}
                     {adv.isCurrent && <span className="adm-item__live">● Live</span>}
                     {isFixture && <span className="adm-item__fixture">Fixture</span>}
                   </div>
@@ -174,6 +191,26 @@ function AdventuresList() {
           flex: 1;
         }
 
+        .adm-pdf-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 10px 18px;
+          border-radius: 11px;
+          background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(255, 138, 61, 0.28));
+          border: 1px solid rgba(239, 68, 68, 0.40);
+          color: #FCA5A5;
+          font-size: 0.83rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .adm-pdf-btn:hover {
+          background: linear-gradient(135deg, rgba(239, 68, 68, 0.32), rgba(255, 138, 61, 0.38));
+          color: #FFFFFF;
+          transform: translateY(-1px);
+        }
+
         .adm-add-btn {
           display: inline-flex;
           align-items: center;
@@ -187,6 +224,16 @@ function AdventuresList() {
           text-decoration: none;
           transition: all 0.2s;
           box-shadow: 0 4px 16px rgba(255,138,61,0.30);
+        }
+
+        .adm-item__pdf {
+          font-size: 0.64rem;
+          color: #FCA5A5;
+          background: rgba(239, 68, 68, 0.12);
+          padding: 2px 6px;
+          border-radius: 5px;
+          border: 1px solid rgba(239, 68, 68, 0.30);
+          font-weight: 700;
         }
         .adm-add-btn:hover {
           transform: translateY(-1px);

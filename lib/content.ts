@@ -7,6 +7,7 @@ const common = {
   id: z.string().max(200).optional(),
   content: z.string().max(500000).default(''),
   coverImage: url.default(''),
+  pdfUrl: url.default(''),
   photos: z.array(url).max(100).default([]),
   videos: z.array(url).max(30).default([]),
   isPublished: z.boolean().default(true),
@@ -25,6 +26,7 @@ export interface ContentRecord {
   id?: string;
   content?: string;
   coverImage?: string;
+  pdfUrl?: string;
   photos?: string[];
   videos?: string[];
   isPublished?: boolean;
@@ -32,14 +34,16 @@ export interface ContentRecord {
 
 export type ContentField = { key: string; label: string; kind?: 'textarea' | 'date' | 'number' | 'list' | 'checkbox' | 'select' | 'image'; options?: string[] };
 export const contentFields: Record<ContentType, ContentField[]> = {
-  blogs: [{ key: 'title', label: 'Title' }, { key: 'slug', label: 'Slug' }, { key: 'excerpt', label: 'Excerpt', kind: 'textarea' }, { key: 'category', label: 'Category', kind: 'select', options: ['CLOUD_ARCHITECTURE', 'AI_LESSONS', 'TRAVEL_JOURNAL', 'CAREER'] }, { key: 'readTime', label: 'Reading time (minutes)', kind: 'number' }, { key: 'publishedAt', label: 'Publication date', kind: 'date' }, { key: 'externalUrl', label: 'External article URL' }],
-  adventures: [{ key: 'destination', label: 'Destination' }, { key: 'slug', label: 'Slug' }, { key: 'country', label: 'Country' }, { key: 'countryCode', label: 'Country code' }, { key: 'cities', label: 'Cities (one per line)', kind: 'list' }, { key: 'excerpt', label: 'Summary', kind: 'textarea' }, { key: 'visitedAt', label: 'Arrival date', kind: 'date' }, { key: 'endedAt', label: 'Departure date', kind: 'date' }, { key: 'isCurrent', label: 'Current adventure', kind: 'checkbox' }, { key: 'travelStyle', label: 'Travel style', kind: 'select', options: ['solo', 'team', 'remote-work', 'leisure'] }, { key: 'highlights', label: 'Highlights (one per line)', kind: 'list' }, { key: 'profilePhotoAtLocation', label: 'Profile photo', kind: 'image' }, { key: 'emoji', label: 'Flag or symbol' }, { key: 'lat', label: 'Latitude', kind: 'number' }, { key: 'lng', label: 'Longitude', kind: 'number' }],
-  projects: [{ key: 'title', label: 'Title' }, { key: 'slug', label: 'Slug' }, { key: 'description', label: 'Description', kind: 'textarea' }, { key: 'tech', label: 'Technologies (one per line)', kind: 'list' }, { key: 'githubUrl', label: 'Source repository URL' }, { key: 'externalUrl', label: 'Project website URL' }],
+  blogs: [{ key: 'title', label: 'Title' }, { key: 'slug', label: 'Slug' }, { key: 'excerpt', label: 'Excerpt', kind: 'textarea' }, { key: 'pdfUrl', label: 'Document URL (PDF / PPT)' }, { key: 'category', label: 'Category', kind: 'select', options: ['CLOUD_ARCHITECTURE', 'AI_LESSONS', 'TRAVEL_JOURNAL', 'CAREER'] }, { key: 'readTime', label: 'Reading time (minutes)', kind: 'number' }, { key: 'publishedAt', label: 'Publication date', kind: 'date' }, { key: 'externalUrl', label: 'External article URL' }],
+  adventures: [{ key: 'destination', label: 'Destination' }, { key: 'slug', label: 'Slug' }, { key: 'country', label: 'Country' }, { key: 'countryCode', label: 'Country code' }, { key: 'cities', label: 'Cities (one per line)', kind: 'list' }, { key: 'excerpt', label: 'Summary', kind: 'textarea' }, { key: 'pdfUrl', label: 'Document URL (PDF / PPT)' }, { key: 'visitedAt', label: 'Arrival date', kind: 'date' }, { key: 'endedAt', label: 'Departure date', kind: 'date' }, { key: 'isCurrent', label: 'Current adventure', kind: 'checkbox' }, { key: 'travelStyle', label: 'Travel style', kind: 'select', options: ['solo', 'team', 'remote-work', 'leisure'] }, { key: 'highlights', label: 'Highlights (one per line)', kind: 'list' }, { key: 'profilePhotoAtLocation', label: 'Profile photo', kind: 'image' }, { key: 'emoji', label: 'Flag or symbol' }, { key: 'lat', label: 'Latitude', kind: 'number' }, { key: 'lng', label: 'Longitude', kind: 'number' }],
+  projects: [{ key: 'title', label: 'Title' }, { key: 'slug', label: 'Slug' }, { key: 'description', label: 'Description', kind: 'textarea' }, { key: 'pdfUrl', label: 'Document URL (PDF / PPT)' }, { key: 'tech', label: 'Technologies (one per line)', kind: 'list' }, { key: 'githubUrl', label: 'Source repository URL' }, { key: 'externalUrl', label: 'Project website URL' }],
   videos: [{ key: 'title', label: 'Title' }, { key: 'youtubeId', label: 'YouTube video ID' }, { key: 'topic', label: 'Topic' }, { key: 'duration', label: 'Duration' }, { key: 'publishedAt', label: 'Publication date', kind: 'date' }],
   about: [{ key: 'title', label: 'Name' }, { key: 'subtitle', label: 'Headline' }, { key: 'githubUrl', label: 'GitHub URL' }, { key: 'youtubeUrl', label: 'YouTube URL' }, { key: 'linkedinUrl', label: 'LinkedIn URL' }, { key: 'twitterUrl', label: 'X URL' }, { key: 'instagramUrl', label: 'Instagram URL' }, { key: 'threadsUrl', label: 'Threads URL' }],
 };
 
+export const isPresentationUrl = (value?: string) => /\.pptx?(?:$|[?#])/i.test(value ?? '');
+
 export function newContentDraft(type: ContentType, item?: object): Record<string, unknown> {
   const today = new Date().toISOString().slice(0, 10);
-  return { title: '', slug: '', content: '', coverImage: '', photos: [], videos: [], isPublished: true, category: 'CLOUD_ARCHITECTURE', readTime: 6, publishedAt: today, visitedAt: today, travelStyle: 'leisure', lat: 0, lng: 0, profilePhotoAtLocation: '/avatar-travel-clean.png', ...(type === 'about' ? { id: 'about' } : {}), ...item };
+  return { title: '', slug: '', content: '', coverImage: '', pdfUrl: '', photos: [], videos: [], isPublished: true, category: 'CLOUD_ARCHITECTURE', readTime: 6, publishedAt: today, visitedAt: today, travelStyle: 'leisure', lat: 0, lng: 0, profilePhotoAtLocation: '/avatar-travel-clean.png', ...(type === 'about' ? { id: 'about' } : {}), ...item };
 }

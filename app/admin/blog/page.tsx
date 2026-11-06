@@ -10,12 +10,15 @@ import {
 } from 'lucide-react';
 import AdminGuard, { getAdminToken } from '@/components/admin/AdminGuard';
 import { blogFixtures, BlogFixture } from '@/lib/fixtures';
+import { isPresentationUrl } from '@/lib/content';
+import PdfUploadModal from '@/components/admin/PdfUploadModal';
 
 // ── Blog List ──────────────────────────────────────────────────────────
 function BlogListContent() {
   const [cmsBlogs, setCmsBlogs] = useState<BlogFixture[]>([]);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,10 +62,25 @@ function BlogListContent() {
       <header className="blg-header">
         <Link href="/admin/dashboard" className="blg-back"><ArrowLeft size={16} /> Dashboard</Link>
         <h1 className="blg-title">Blog Posts</h1>
+        <button onClick={() => setShowPdfModal(true)} className="blg-pdf-btn">
+          <FileText size={15} /> Upload PDF / PPT Post
+        </button>
         <button onClick={() => setShowForm(true)} className="blg-add-btn">
           <Plus size={15} /> New Post
         </button>
       </header>
+
+      {/* PDF Upload Modal */}
+      {showPdfModal && (
+        <PdfUploadModal
+          type="blogs"
+          isOpen={showPdfModal}
+          onClose={() => setShowPdfModal(false)}
+          onSaved={(post) => {
+            setCmsBlogs((prev) => [post as unknown as BlogFixture, ...prev]);
+          }}
+        />
+      )}
 
       {/* Inline New Post Form (modal-like) */}
       <AnimatePresence>
@@ -103,6 +121,7 @@ function BlogListContent() {
                 <div className="blg-item__info">
                   <div className="blg-item__title-row">
                     <h3 className="blg-item__title">{post.title}</h3>
+                    {post.pdfUrl && <span className="blg-item__pdf">{isPresentationUrl(post.pdfUrl) ? '📊 PPT' : '📄 PDF'}</span>}
                     {isFixture && <span className="blg-item__fixture">Fixture</span>}
                     {post.externalUrl && (
                       <a href={post.externalUrl} target="_blank" rel="noopener noreferrer" className="blg-item__ext">
@@ -170,6 +189,19 @@ function BlogListContent() {
           letter-spacing: -0.03em; flex: 1;
         }
 
+        .blg-pdf-btn {
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 10px 18px; border-radius: 11px;
+          background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(105, 88, 255, 0.28));
+          border: 1px solid rgba(239, 68, 68, 0.40);
+          color: #FCA5A5; font-size: 0.83rem; font-weight: 600;
+          cursor: pointer; transition: all 0.2s;
+        }
+        .blg-pdf-btn:hover {
+          background: linear-gradient(135deg, rgba(239, 68, 68, 0.32), rgba(105, 88, 255, 0.38));
+          color: #FFFFFF; transform: translateY(-1px);
+        }
+
         .blg-add-btn {
           display: inline-flex; align-items: center; gap: 7px;
           padding: 10px 20px; border-radius: 11px;
@@ -179,6 +211,14 @@ function BlogListContent() {
           box-shadow: 0 4px 16px rgba(105,88,255,0.30);
         }
         .blg-add-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(105,88,255,0.45); }
+
+        .blg-item__pdf {
+          font-size: 0.64rem; color: #FCA5A5;
+          background: rgba(239, 68, 68, 0.12);
+          padding: 2px 6px; border-radius: 5px;
+          border: 1px solid rgba(239, 68, 68, 0.30);
+          font-weight: 700;
+        }
 
         .blg-search-wrap { position: relative; max-width: 440px; margin-bottom: 16px; }
         .blg-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: rgba(160,168,192,0.45); }
