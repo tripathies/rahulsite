@@ -17,6 +17,33 @@ const azureAdClientSecret = process.env.AZURE_AD_CLIENT_SECRET ?? '';
 const azureAdTenantId = process.env.AZURE_AD_TENANT_ID ?? 'common';
 const adminPassword = process.env.ADMIN_PASSWORD ?? '';
 
+// ── Rate limiter for credentials login (brute-force protection) ──
+const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+let rateLimitCleanupCounter = 0;
+
+function checkLoginRateLimit(email: string): boolean {
+  const now = Date.now();
+  const key = email.toLowerCase().trim();
+
+  // Periodic cleanup: purge stale entries every ~1000 checks to prevent memory leak
+  if (++rateLimitCleanupCounter > 1000) {
+    rateLimitCleanupCounter = 0;
+    for (const [k, v] of loginAttempts) {
+      if (now > v.resetAt) loginAttempts.delete(k);
+    }
+  }
+
+  const entry = loginAttempts.get(key);
+  if (!entry || now > entry.resetAt) {
+    loginAttempts.set(key, { count: 1, resetAt: now + LOGIN_WINDOW_MS });
+    return true; // allowed
+  }
+  entry.count++;
+  return entry.count <= MAX_LOGIN_ATTEMPTS;
+}
+
 export const authProviderAvailability = {
   google: Boolean(googleClientId && googleClientSecret),
   azureAd: Boolean(azureAdClientId && azureAdClientSecret),
@@ -63,6 +90,10 @@ if (authProviderAvailability.credentials) {
         }
         
         const inputEmail = credentials.email.toLowerCase().trim();
+        
+        if (!checkLoginRateLimit(inputEmail)) {
+          throw new Error('Too many login attempts. Please try again in 15 minutes.');
+        }
         
         if (adminEmails.includes(inputEmail) && credentials.password === adminPassword) {
           return {

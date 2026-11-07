@@ -29,6 +29,22 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' https://fonts.gstatic.com",
+              "img-src 'self' data: blob: https://*.blob.core.windows.net https://images.unsplash.com https://i.ytimg.com",
+              "media-src 'self' blob: https://*.blob.core.windows.net",
+              "connect-src 'self' https://*.blob.core.windows.net",
+              "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+          },
+          {
             key: "X-Content-Type-Options",
             value: "nosniff",
           },

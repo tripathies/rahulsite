@@ -30,7 +30,7 @@ export async function GET(
       return publicItem;
     });
     return NextResponse.json({ ok: true, data, source: 'cosmos' }, {
-      headers: { 'Cache-Control': 'no-store' },
+      headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
     });
   } catch {
     return NextResponse.json({ ok: false, error: 'Content is temporarily unavailable.' }, { status: 503 });
