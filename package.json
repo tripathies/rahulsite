@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "node scripts/prepare-documents.mjs && next dev",
+    "build": "node scripts/prepare-documents.mjs && next build",
     "package:deploy": "npm run build && node scripts/package-deploy.mjs",
     "start": "next start",
     "lint": "eslint"
@@ -21,11 +21,14 @@
     "mongoose": "^9.9.4",
     "next": "16.3.2",
     "next-auth": "^4.24.15",
+    "pdfjs-dist": "^4.10.38",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "three": "^0.185.1",
+    "turndown": "^7.2.5",
+    "turndown-plugin-gfm": "^1.0.2",
     "zod": "^4.6.5",
     "zustand": "^5.0.15"
   },
@@ -35,6 +38,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/three": "^0.185.4",
+    "@types/turndown": "^5.0.6",
     "eslint": "^9",
     "eslint-config-next": "16.3.2",
     "tailwindcss": "^4",

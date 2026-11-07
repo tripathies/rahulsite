@@ -2,23 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Plus, Edit2, Trash2, Search, FileText,
-  ExternalLink, Loader2, Save, X, ChevronRight
+  ArrowLeft, Plus, Trash2, Search, FileText,
+  ExternalLink, Loader2, ChevronRight
 } from 'lucide-react';
 import AdminGuard, { getAdminToken } from '@/components/admin/AdminGuard';
 import { blogFixtures, BlogFixture } from '@/lib/fixtures';
 import { isPresentationUrl } from '@/lib/content';
-import PdfUploadModal from '@/components/admin/PdfUploadModal';
+import BlogComposer from '@/components/admin/BlogComposer';
 
 // ── Blog List ──────────────────────────────────────────────────────────
 function BlogListContent() {
   const [cmsBlogs, setCmsBlogs] = useState<BlogFixture[]>([]);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [showPdfModal, setShowPdfModal] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,35 +60,17 @@ function BlogListContent() {
       <header className="blg-header">
         <Link href="/admin/dashboard" className="blg-back"><ArrowLeft size={16} /> Dashboard</Link>
         <h1 className="blg-title">Blog Posts</h1>
-        <button onClick={() => setShowPdfModal(true)} className="blg-pdf-btn">
-          <FileText size={15} /> Upload PDF / PPT Post
-        </button>
         <button onClick={() => setShowForm(true)} className="blg-add-btn">
           <Plus size={15} /> New Post
         </button>
       </header>
 
-      {/* PDF Upload Modal */}
-      {showPdfModal && (
-        <PdfUploadModal
-          type="blogs"
-          isOpen={showPdfModal}
-          onClose={() => setShowPdfModal(false)}
-          onSaved={(post) => {
-            setCmsBlogs((prev) => [post as unknown as BlogFixture, ...prev]);
-          }}
-        />
+      {showForm && (
+        <BlogComposer existing={false} onClose={() => setShowForm(false)} onSaved={(post) => {
+          setCmsBlogs((prev) => [post as unknown as BlogFixture, ...prev]);
+          setShowForm(false);
+        }} />
       )}
-
-      {/* Inline New Post Form (modal-like) */}
-      <AnimatePresence>
-        {showForm && (
-          <NewPostInline onClose={() => setShowForm(false)} onSaved={(post) => {
-            setCmsBlogs((prev) => [post as BlogFixture, ...prev]);
-            setShowForm(false);
-          }} />
-        )}
-      </AnimatePresence>
 
       {/* Search */}
       <div className="blg-search-wrap">
@@ -322,133 +302,6 @@ function BlogListContent() {
         }
       `}</style>
     </div>
-  );
-}
-
-// ── Inline New Post Form ────────────────────────────────────────────────
-function NewPostInline({ onClose, onSaved }: { onClose: () => void; onSaved: (post: object) => void }) {
-  const [form, setForm] = useState({
-    title: '', excerpt: '', category: 'CLOUD_ARCHITECTURE', readTime: 5,
-    publishedAt: new Date().toISOString().split('T')[0], externalUrl: '',
-  });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-
-  const set = (k: string, v: string | number) => setForm((p) => ({ ...p, [k]: v }));
-
-  const handleSave = async () => {
-    if (!form.title || !form.excerpt) { setError('Title and excerpt are required.'); return; }
-    setSaving(true);
-    setError('');
-    try {
-      const payload = {
-        ...form, slug: form.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-        isPlaceholder: true as const,
-      };
-      const res = await fetch('/api/admin/data/blogs', {
-        method: 'POST',
-        headers: { 'x-admin-token': getAdminToken(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.ok) onSaved(data.data);
-      else setError('Save failed.');
-    } catch { setError('Network error.'); }
-    finally { setSaving(false); }
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -12 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      className="np-form"
-    >
-      <div className="np-header">
-        <h2 className="np-title">New Blog Post</h2>
-        <button onClick={onClose} className="np-close"><X size={18} /></button>
-      </div>
-      {error && <p className="np-error">⚠ {error}</p>}
-      <div className="np-fields">
-        <input className="np-input" placeholder="Post title *" value={form.title} onChange={(e) => set('title', e.target.value)} />
-        <textarea className="np-textarea" rows={3} placeholder="Short excerpt *" value={form.excerpt} onChange={(e) => set('excerpt', e.target.value)} />
-        <div className="np-row">
-          <select className="np-select" value={form.category} onChange={(e) => set('category', e.target.value)}>
-            <option value="CLOUD_ARCHITECTURE">Cloud Architecture</option>
-            <option value="AI_LESSONS">AI Lessons</option>
-            <option value="TRAVEL_JOURNAL">Travel Journal</option>
-            <option value="CAREER">Career</option>
-          </select>
-          <input type="number" className="np-input np-input--sm" placeholder="Read time (min)" value={form.readTime}
-            onChange={(e) => set('readTime', parseInt(e.target.value))} min={1} max={120} />
-          <input type="date" className="np-input np-input--sm" value={form.publishedAt}
-            onChange={(e) => set('publishedAt', e.target.value)} />
-        </div>
-        <input className="np-input" placeholder="External URL (optional)" value={form.externalUrl}
-          onChange={(e) => set('externalUrl', e.target.value)} />
-      </div>
-      <div className="np-footer">
-        <button onClick={onClose} className="np-cancel">Cancel</button>
-        <button onClick={handleSave} disabled={saving} className="np-save">
-          {saving ? <><Loader2 size={13} className="np-spin" /> Saving…</> : <><Save size={13} /> Save Post</>}
-        </button>
-      </div>
-
-      <style jsx>{`
-        .np-form {
-          max-width: 700px;
-          background: rgba(13,27,62,0.90);
-          border: 1px solid rgba(105,88,255,0.30);
-          border-radius: 18px;
-          padding: 24px;
-          margin-bottom: 24px;
-          backdrop-filter: blur(16px);
-        }
-        .np-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-        .np-title { font-size: 1rem; font-weight: 700; color: #F0F0F5; }
-        .np-close {
-          background: none; border: none; color: rgba(160,168,192,0.55);
-          cursor: pointer; padding: 4px; transition: color 0.2s; display: flex;
-        }
-        .np-close:hover { color: #F0F0F5; }
-        .np-error { font-size: 0.80rem; color: #F87171; background: rgba(248,113,113,0.10); border: 1px solid rgba(248,113,113,0.20); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; }
-        .np-fields { display: flex; flex-direction: column; gap: 10px; }
-        .np-input, .np-textarea, .np-select {
-          padding: 10px 14px; border-radius: 10px;
-          background: rgba(8,18,41,0.70);
-          border: 1px solid rgba(105,88,255,0.20);
-          color: #F0F0F5; font-size: 0.88rem;
-          font-family: 'Inter', sans-serif;
-          outline: none; transition: border-color 0.2s; width: 100%;
-        }
-        .np-textarea { resize: vertical; }
-        .np-input:focus, .np-textarea:focus, .np-select:focus { border-color: #6958FF; }
-        .np-input::placeholder, .np-textarea::placeholder { color: rgba(160,168,192,0.30); }
-        .np-select option { background: #0D1B3E; }
-        .np-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; }
-        .np-input--sm { width: auto; }
-        .np-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
-        .np-cancel {
-          padding: 9px 18px; border-radius: 9px;
-          background: rgba(105,88,255,0.10);
-          border: 1px solid rgba(105,88,255,0.20);
-          color: rgba(160,168,192,0.70);
-          font-size: 0.84rem; cursor: pointer; transition: all 0.2s;
-        }
-        .np-cancel:hover { color: #F0F0F5; border-color: rgba(105,88,255,0.40); }
-        .np-save {
-          display: inline-flex; align-items: center; gap: 7px;
-          padding: 9px 20px; border-radius: 9px;
-          background: linear-gradient(135deg, #6958FF, #8B7AFF);
-          color: white; font-size: 0.84rem; font-weight: 700;
-          border: none; cursor: pointer; transition: all 0.2s;
-        }
-        .np-save:hover:not(:disabled) { transform: translateY(-1px); }
-        .np-save:disabled { opacity: 0.65; cursor: not-allowed; }
-        .np-spin { animation: spin 0.8s linear infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
-    </motion.div>
   );
 }
 

@@ -1,0 +1,10 @@
+.reader { width: 100%; margin: 0 0 48px; }
+.page { position: relative; width: 100%; background: white; margin: 0 0 12px; overflow: hidden; }
+.canvas { display: block; width: 100%; height: auto; }
+.textLayer { position: absolute; inset: 0; overflow: hidden; line-height: 1; text-align: initial; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; }
+.textLayer :global(span), .textLayer :global(br) { position: absolute; color: transparent; white-space: pre; cursor: text; transform-origin: 0 0; }
+.textLayer :global(span.markedContent) { top: 0; height: 0; }
+.textLayer ::selection { background: rgb(0 110 255 / 25%); }
+.status { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 12px; color: #333; background: #fff; padding: 16px; }
+.status button, .error button { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid currentColor; border-radius: 6px; cursor: pointer; }
+.error { padding: 24px 0; }

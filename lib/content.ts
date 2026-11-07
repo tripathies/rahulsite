@@ -8,6 +8,7 @@ const common = {
   content: z.string().max(500000).default(''),
   coverImage: url.default(''),
   pdfUrl: url.default(''),
+  readingPdfUrl: url.refine(value => !value || /\.pdf(?:$|[?#])/i.test(value), 'The reading version must be a PDF.').default(''),
   photos: z.array(url).max(100).default([]),
   videos: z.array(url).max(30).default([]),
   isPublished: z.boolean().default(true),
@@ -27,6 +28,7 @@ export interface ContentRecord {
   content?: string;
   coverImage?: string;
   pdfUrl?: string;
+  readingPdfUrl?: string;
   photos?: string[];
   videos?: string[];
   isPublished?: boolean;

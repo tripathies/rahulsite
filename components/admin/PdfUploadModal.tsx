@@ -1,27 +1,28 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   FileText, Upload, X, Loader2, Sparkles, CheckCircle2,
   AlertTriangle, Image as ImageIcon, ArrowRight, Eye, ImagePlus
 } from 'lucide-react';
-import { extractPdfFirstPage, PdfThumbnailResult } from '@/lib/pdfThumbnail';
-import { ContentType, contentSchemas, newContentDraft } from '@/lib/content';
+import { extractPdfFirstPage, type PdfThumbnailResult } from '@/lib/pdfThumbnail';
+import DocumentReader from '@/components/pdf/DocumentReader';
 
 interface PdfUploadModalProps {
   type: 'blogs' | 'adventures' | 'projects';
+  item?: Record<string, unknown>;
   isOpen: boolean;
   onClose: () => void;
   onSaved: (item: Record<string, unknown>) => void;
 }
 
-export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUploadModalProps) {
+export default function PdfUploadModal({ type, item, isOpen, onClose, onSaved }: PdfUploadModalProps) {
   // ── Form State ────────────────────────────────────────────────────────
-  const [heading, setHeading] = useState('');
-  const [excerpt, setExcerpt] = useState('');
-  const [category, setCategory] = useState<'CLOUD_ARCHITECTURE' | 'AI_LESSONS' | 'TRAVEL_JOURNAL' | 'CAREER'>('CLOUD_ARCHITECTURE');
-  const [readTime, setReadTime] = useState(8);
+  const [heading, setHeading] = useState(String(item?.title || ''));
+  const [excerpt, setExcerpt] = useState(String(item?.excerpt || ''));
+  const [category, setCategory] = useState<'CLOUD_ARCHITECTURE' | 'AI_LESSONS' | 'TRAVEL_JOURNAL' | 'CAREER'>((item?.category as 'CLOUD_ARCHITECTURE' | 'AI_LESSONS' | 'TRAVEL_JOURNAL' | 'CAREER') || 'CLOUD_ARCHITECTURE');
+  const [readTime, setReadTime] = useState(Number(item?.readTime) || 8);
   const [country, setCountry] = useState('Global');
   const [travelStyle, setTravelStyle] = useState<'remote-work' | 'solo' | 'team' | 'leisure'>('remote-work');
   const [emoji, setEmoji] = useState('📄');
@@ -37,11 +38,18 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
   const [error, setError] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverPreview, setCoverPreview] = useState('');
+  const [readingFile, setReadingFile] = useState<File | null>(null);
+  const [readingPreview, setReadingPreview] = useState('');
+  const [showDocumentPreview, setShowDocumentPreview] = useState(false);
+  const [documentReady, setDocumentReady] = useState(false);
+  const conversionRef = useRef(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => () => { if (coverPreview) URL.revokeObjectURL(coverPreview); }, [coverPreview]);
+  useEffect(() => () => { if (readingPreview) URL.revokeObjectURL(readingPreview); }, [readingPreview]);
+  useEffect(() => () => { conversionRef.current++; }, []);
 
   if (!isOpen) return null;
 
@@ -58,18 +66,47 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
     setCoverPreview(URL.createObjectURL(selected));
   };
 
-  // Handle PDF / PowerPoint file selection
+  const preparePdf = async (selected: File, conversion: number) => {
+    setExtracting(true);
+    setDocumentReady(false);
+    setThumbnail(null);
+    setReadingPreview('');
+    setError('');
+    try {
+      const result = await extractPdfFirstPage(selected);
+      if (conversion !== conversionRef.current) return;
+      setThumbnail(result);
+      setDocumentReady(true);
+      setReadingPreview(URL.createObjectURL(selected));
+    } catch (failure) {
+      if (conversion === conversionRef.current) setError(failure instanceof Error ? failure.message : 'This PDF could not be opened. Please export it again.');
+    } finally {
+      if (conversion === conversionRef.current) setExtracting(false);
+    }
+  };
+
   const handleFileChange = async (selectedFile: File) => {
+    if (saving) return;
     const lowerName = selectedFile.name.toLowerCase();
     const isPdf = lowerName.endsWith('.pdf');
     if (!isPdf && !/\.pptx?$/.test(lowerName)) {
       setError('Please select a PDF (.pdf) or PowerPoint (.ppt, .pptx) file.');
       return;
     }
+    if (selectedFile.size > (isPdf ? 50 : 100) * 1024 * 1024) {
+      setError(`File too large. Maximum ${isPdf ? 50 : 100}MB.`);
+      return;
+    }
 
     setError('');
     setFile(selectedFile);
     setThumbnail(null);
+    setReadingFile(null);
+    setReadingPreview('');
+    setDocumentReady(false);
+    setShowDocumentPreview(false);
+    setExtracting(false);
+    const conversion = ++conversionRef.current;
 
     // Auto-fill heading from filename if empty
     if (!heading) {
@@ -80,18 +117,7 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
       setHeading(clean);
     }
 
-    // Extract first page as cover image (PDF only)
-    if (!isPdf) return;
-    setExtracting(true);
-    try {
-      const result = await extractPdfFirstPage(selectedFile);
-      setThumbnail(result);
-    } catch (err) {
-      console.error('Failed to extract PDF cover:', err);
-      setError('Could not extract PDF first page as image. Default cover will be used.');
-    } finally {
-      setExtracting(false);
-    }
+    if (isPdf) await preparePdf(selectedFile, conversion);
   };
 
   // Helper to upload a single File to /api/admin/upload
@@ -127,6 +153,10 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
       setError('Please add a cover image for this post.');
       return;
     }
+    if (type === 'blogs' && (!documentReady || extracting || (isPresentation && !readingFile))) {
+      setError('Add a readable PDF before publishing. For PowerPoint, use its PDF export.');
+      return;
+    }
 
     setSaving(true);
     setError('');
@@ -135,6 +165,7 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
       // 1. Upload the document
       setUploadStep(`Uploading ${docLabel} document…`);
       const pdfUrl = await uploadSingleFile(file);
+      const readingPdfUrl = type === 'blogs' && isPresentation && readingFile ? await uploadSingleFile(readingFile) : '';
 
       // 2. Upload the cover image (custom one wins over the PDF page-1 render)
       setUploadStep('Uploading cover image…');
@@ -154,23 +185,25 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
         .replace(/\s+/g, '-')
         .replace(/[^a-z0-9-]/g, '')
         .slice(0, 100);
-      const uniqueSlug = `${cleanSlug}-${Date.now().toString(36)}`;
+      const uniqueSlug = item?.slug || `${cleanSlug}-${Date.now().toString(36)}`;
       const today = new Date().toISOString().split('T')[0];
 
       let payload: Record<string, unknown> = {};
 
       if (type === 'blogs') {
         payload = {
+          ...item,
           title: heading.trim(),
           slug: uniqueSlug,
-          excerpt: excerpt.trim() || `${heading.trim()} — read the full ${docLabel} below.`,
+          excerpt: excerpt.trim(),
           category,
           readTime: Number(readTime) || 8,
-          publishedAt: today,
+          publishedAt: item?.publishedAt || today,
           coverImage: coverImageUrl,
           pdfUrl,
-          content: `# ${heading.trim()}\n\n${excerpt.trim()}`,
-          isPublished: true,
+          readingPdfUrl,
+          content: item?.content || '',
+          isPublished: item?.isPublished !== false,
         };
       } else if (type === 'adventures') {
         payload = {
@@ -213,9 +246,9 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
       }
 
       // 4. Save to database / CMS
-      const endpoint = `/api/admin/data/${type}`;
+      const endpoint = `/api/admin/data/${type}${item?.id ? `/${encodeURIComponent(String(item.id))}` : ''}`;
       const res = await fetch(endpoint, {
-        method: 'POST',
+        method: item?.id ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -240,7 +273,7 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
     type === 'blogs' ? 'Blog Post' : type === 'adventures' ? 'Travel Story' : 'Project';
 
   return (
-    <div className="pdf-modal-overlay" onClick={onClose}>
+    <div className="pdf-modal-overlay" onClick={() => { if (!saving) onClose(); }}>
       <motion.div
         initial={{ opacity: 0, scale: 0.94, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -256,13 +289,13 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
               <FileText size={20} />
             </div>
             <div>
-              <h2 className="pdf-modal__title">Upload PDF / PPT {typeLabel}</h2>
+              <h2 className="pdf-modal__title">{item ? 'Replace document' : type === 'blogs' ? 'Upload Blog Post' : `Upload PDF / PPT ${typeLabel}`}</h2>
               <p className="pdf-modal__subtitle">
-                Give it a title and a cover image, then publish. Files are stored in Azure Blob Storage.
+                Publication details
               </p>
             </div>
           </div>
-          <button type="button" onClick={onClose} className="pdf-modal__close" aria-label="Close">
+          <button type="button" onClick={onClose} disabled={saving} className="pdf-modal__close" aria-label="Close">
             <X size={18} />
           </button>
         </header>
@@ -308,7 +341,7 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
                     setIsDragging(false);
                     if (e.dataTransfer.files?.[0]) handleFileChange(e.dataTransfer.files[0]);
                   }}
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => { if (!saving) fileInputRef.current?.click(); }}
                 >
                   <input
                     ref={fileInputRef}
@@ -324,7 +357,7 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
                   {extracting ? (
                     <div className="pdf-dropzone__loading">
                       <Loader2 size={24} className="spin" />
-                      <span>Extracting first page cover image…</span>
+                      <span>Rendering first page cover…</span>
                     </div>
                   ) : file ? (
                     <div className="pdf-dropzone__file-info">
@@ -346,13 +379,24 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
               </div>
 
               {/* Type-Specific Options */}
+              {type === 'blogs' && isPresentation && (
+                <label className="pdf-field">
+                  <span className="pdf-field__label">PowerPoint PDF export <strong className="required">*</strong></span>
+                  <input type="file" accept=".pdf,application/pdf" disabled={saving} onChange={event => {
+                    const selected = event.target.files?.[0];
+                    if (!selected) return;
+                    setReadingFile(selected);
+                    void preparePdf(selected, ++conversionRef.current);
+                  }} />
+                </label>
+              )}
               {type === 'blogs' && (
                 <div className="pdf-row">
                   <label className="pdf-field">
                     <span className="pdf-field__label">Category</span>
                     <select
                       value={category}
-                      onChange={(e) => setCategory(e.target.value as any)}
+                      onChange={(e) => setCategory(e.target.value as typeof category)}
                       className="pdf-select"
                       disabled={saving}
                     >
@@ -396,7 +440,7 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
                     <span className="pdf-field__label">Travel Style</span>
                     <select
                       value={travelStyle}
-                      onChange={(e) => setTravelStyle(e.target.value as any)}
+                      onChange={(e) => setTravelStyle(e.target.value as typeof travelStyle)}
                       className="pdf-select"
                       disabled={saving}
                     >
@@ -475,7 +519,7 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
                   <div className="pdf-preview-card__placeholder">
                     <FileText size={40} />
                     <p>Add a cover image</p>
-                    <small>For PDFs, page 1 is used automatically unless you choose your own image.</small>
+                    <small>{type === 'blogs' ? 'First page or slide' : 'First PDF page'}</small>
                   </div>
                 )}
 
@@ -521,6 +565,17 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
             </div>
           </div>
 
+          {type === 'blogs' && readingPreview && (
+            <section style={{ padding: '0 26px 24px', minWidth: 0 }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+                <button type="button" className="pdf-btn pdf-btn--cancel" disabled={saving} onClick={() => setShowDocumentPreview(!showDocumentPreview)} aria-expanded={showDocumentPreview}>
+                  <Eye size={16} /> {showDocumentPreview ? 'Close preview' : 'Preview post'}
+                </button>
+              </div>
+              {showDocumentPreview && <DocumentReader key={readingPreview} url={readingPreview} file={readingFile || file || undefined} title={heading} />}
+            </section>
+          )}
+
           {/* ── Footer Actions ───────────────────────────────────────── */}
           <footer className="pdf-modal__footer">
             <button
@@ -534,7 +589,7 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
 
             <button
               type="submit"
-              disabled={saving || !file || !heading.trim() || extracting || (!coverFile && !thumbnail)}
+              disabled={saving || !file || !heading.trim() || extracting || (!coverFile && !thumbnail) || (type === 'blogs' && (!documentReady || (isPresentation && !readingFile)))}
               className="pdf-btn pdf-btn--submit"
             >
               {saving ? (
@@ -544,7 +599,7 @@ export default function PdfUploadModal({ type, isOpen, onClose, onSaved }: PdfUp
                 </>
               ) : (
                 <>
-                  <span>Publish {docLabel} {typeLabel}</span>
+                  <span>{item ? 'Save changes' : `Publish ${typeLabel}`}</span>
                   <ArrowRight size={15} />
                 </>
               )}

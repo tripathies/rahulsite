@@ -11,7 +11,8 @@ import { blogFixtures } from '@/lib/fixtures';
 import { useContent } from '@/components/admin/useContent';
 import ContentTools from '@/components/admin/ContentTools';
 import ContentBody from '@/components/sections/ContentBody';
-import PdfViewer from '@/components/pdf/PdfViewer';
+import DocumentReader from '@/components/pdf/DocumentReader';
+import { isPresentationUrl } from '@/lib/content';
 
 const categoryColors: Record<string, string> = {
   CLOUD_ARCHITECTURE: '#6958FF',
@@ -34,6 +35,7 @@ export default function BlogSlugPage() {
 
   const content = useContent('blogs', blogFixtures);
   const post = content.items.find((entry) => entry.slug === slug);
+  const readingUrl = post?.readingPdfUrl || (isPresentationUrl(post?.pdfUrl) ? '' : post?.pdfUrl);
 
   useEffect(() => {
     if (post?.externalUrl) {
@@ -45,7 +47,7 @@ export default function BlogSlugPage() {
   return (
     <>
       <Navbar />
-      <main id="main-content" style={{ paddingTop: '100px', minHeight: '100vh' }}>
+      <main id="main-content" style={{ paddingTop: '160px', minHeight: '100vh' }}>
         <div className="container-site" style={{ maxWidth: '800px', margin: '0 auto' }}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -78,14 +80,13 @@ export default function BlogSlugPage() {
             </h1>
             <ContentTools type="blogs" item={post} source={content.source} onChanged={content.reload} />
             {content.error && <p role="alert">{content.error}</p>}
-            {post.coverImage && <img src={post.coverImage} alt={post.title} style={{ width: '100%', maxHeight: 520, objectFit: 'cover', marginBottom: 24 }} />}
 
-            <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: '40px', paddingBottom: '24px', borderBottom: '1px solid var(--border-subtle)' }}>
+            {post.excerpt && <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '28px' }}>
               {post.excerpt}
-            </p>
+            </p>}
 
             {/* Author Badge */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '40px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', paddingBottom: '28px', marginBottom: '32px', borderBottom: '1px solid var(--border-subtle)' }}>
               <div style={{
                 width: '44px', height: '44px', borderRadius: '50%',
                 background: 'linear-gradient(135deg, var(--accent-tech), #8B7AFF)',
@@ -99,15 +100,10 @@ export default function BlogSlugPage() {
               </div>
             </div>
 
-            {/* Embedded Full PDF Document */}
-            {post.pdfUrl && (
-              <div style={{ marginBottom: '40px' }}>
-                <PdfViewer url={post.pdfUrl} title={post.title} height="850px" />
-              </div>
-            )}
+            {!post.pdfUrl && post.coverImage && <img src={post.coverImage} alt="" style={{ display: 'block', width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', borderRadius: 12, marginBottom: 40 }} />}
 
             {/* Article Content */}
-            <ContentBody content={post.content || ''} photos={post.photos} videos={post.videos} />
+            {readingUrl ? <DocumentReader key={readingUrl} url={readingUrl} title={post.title} /> : post.pdfUrl ? <p role="status">This article is being prepared for reading.</p> : <ContentBody content={post.content || ''} photos={post.photos} videos={post.videos} />}
             {post.externalUrl && <a href={post.externalUrl} target="_blank" rel="noopener noreferrer">Read the original article</a>}
           </motion.div>
         </div>

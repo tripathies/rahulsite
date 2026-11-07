@@ -1,3 +1,5 @@
+# Generated local PDF.js assets
+/public/document-assets/
 # dependencies
 node_modules
 .pnp

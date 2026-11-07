@@ -7,6 +7,8 @@ import { Download, Eye, FileText, Pencil, Plus, Save, Trash2, X } from 'lucide-r
 import { contentFields, contentSchemas, newContentDraft, type ContentType } from '@/lib/content';
 import MediaUploader from './MediaUploader';
 import PdfUploadModal from './PdfUploadModal';
+import BlogComposer from './BlogComposer';
+import { writeContent } from './writeContent';
 import ContentBody from '@/components/sections/ContentBody';
 import styles from './ContentTools.module.css';
 
@@ -16,16 +18,6 @@ interface Props {
   source: string;
   onChanged: () => void;
   importItems?: object[];
-}
-
-async function writeContent(type: ContentType, draft: Record<string, unknown>, existing: boolean) {
-  const parsed = contentSchemas[type].safeParse(draft);
-  if (!parsed.success) throw new Error(parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`).join('\n'));
-  const path = `/api/admin/data/${type}${existing ? `/${encodeURIComponent(String(draft.id))}` : ''}`;
-  const response = await fetch(path, { method: existing ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(parsed.data) });
-  const payload = await response.json();
-  if (!response.ok || !payload.ok) throw new Error(payload.error || 'Save failed.');
-  return parsed.data;
 }
 
 export default function ContentTools({ type, item, source, onChanged, importItems }: Props) {
@@ -54,13 +46,13 @@ export default function ContentTools({ type, item, source, onChanged, importItem
     finally { setBusy(false); }
   }
 
-  const isPdfSupportedType = type === 'blogs' || type === 'adventures' || type === 'projects';
+  const isPdfSupportedType = type === 'adventures' || type === 'projects';
 
   return <div className={styles.tools}>
     <button type="button" className={styles.button} disabled={busy} title={item ? `Edit ${title}` : 'Create new content'} onClick={() => setOpen(true)}>
       {item ? <Pencil size={16} /> : <Plus size={16} />} {item ? 'Edit' : `New ${type === 'adventures' ? 'travel story' : type === 'blogs' ? 'blog' : type === 'projects' ? 'project' : type === 'videos' ? 'video' : 'profile'}`}
     </button>
-    {!item && isPdfSupportedType && (
+    {isPdfSupportedType && !item && (
       <button
         type="button"
         className={styles.button}
@@ -70,10 +62,10 @@ export default function ContentTools({ type, item, source, onChanged, importItem
           borderColor: 'rgba(239, 68, 68, 0.40)',
           color: '#FCA5A5',
         }}
-        title={`Upload a PDF or PPT to create a new ${type === 'adventures' ? 'travel story' : type === 'blogs' ? 'blog' : 'project'}`}
+        title={`Upload a PDF or PPT to create a new ${type === 'adventures' ? 'travel story' : 'project'}`}
         onClick={() => setPdfOpen(true)}
       >
-        <FileText size={16} style={{ color: '#F87171' }} /> Upload PDF / PPT {type === 'adventures' ? 'Story' : type === 'blogs' ? 'Blog' : 'Project'}
+        <FileText size={16} style={{ color: '#F87171' }} /> Upload PDF / PPT {type === 'adventures' ? 'Story' : 'Project'}
       </button>
     )}
     {item && type !== 'about' && source === 'cosmos' && Boolean(record?.id) && <button type="button" className={styles.icon} disabled={busy} title={`Delete ${title}`} aria-label={`Delete ${title}`} onClick={remove}><Trash2 size={16} /></button>}
@@ -85,7 +77,12 @@ export default function ContentTools({ type, item, source, onChanged, importItem
       finally { setBusy(false); onChanged(); }
     }}><Download size={16} /> Import existing content</button>}
     {error && <p role="alert" className={styles.error}>{error}</p>}
-    {open && <ContentEditor type={type} item={record} existing={source === 'cosmos' && Boolean(record?.id)} onClose={() => setOpen(false)} onSaved={(saved) => {
+    {open && type === 'blogs' && <BlogComposer item={record} existing={source === 'cosmos' && Boolean(record?.id)} onClose={() => setOpen(false)} onSaved={(saved) => {
+      setOpen(false);
+      if (record?.slug && saved.slug !== record.slug && pathname.endsWith(`/${record.slug}`)) router.replace(`/blog/${saved.slug}`);
+      else onChanged();
+    }} />}
+    {open && type !== 'blogs' && <ContentEditor type={type} item={record} existing={source === 'cosmos' && Boolean(record?.id)} onClose={() => setOpen(false)} onSaved={(saved) => {
       setOpen(false);
       if (record?.slug && saved.slug !== record.slug && pathname.endsWith(`/${record.slug}`)) router.replace(`${pathname.slice(0, pathname.lastIndexOf('/'))}/${saved.slug}`);
       else onChanged();
@@ -93,6 +90,7 @@ export default function ContentTools({ type, item, source, onChanged, importItem
     {pdfOpen && isPdfSupportedType && (
       <PdfUploadModal
         type={type as 'blogs' | 'adventures' | 'projects'}
+        item={record}
         isOpen={pdfOpen}
         onClose={() => setPdfOpen(false)}
         onSaved={() => onChanged()}
