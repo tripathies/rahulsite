@@ -99,7 +99,7 @@ export default function BlogPage() {
                       position: 'relative',
                       overflow: 'hidden',
                     }}>
-                      {post.coverImage && <img src={post.coverImage} alt={post.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />}
+                      {post.coverImage && <img src={post.coverImage} alt={post.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'fill' }} />}
                     </div>
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
