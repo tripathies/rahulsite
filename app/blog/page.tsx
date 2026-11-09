@@ -97,8 +97,9 @@ export default function BlogPage() {
                       aspectRatio: '16 / 9',
                       background: `linear-gradient(135deg, ${categoryColors[post.category]}22, ${categoryColors[post.category]}08)`,
                       position: 'relative',
+                      overflow: 'hidden',
                     }}>
-                      {post.coverImage && <img src={post.coverImage} alt={post.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                      {post.coverImage && <img src={post.coverImage} alt={post.title} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain' }} />}
                     </div>
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
