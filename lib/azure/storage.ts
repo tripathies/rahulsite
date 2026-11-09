@@ -71,10 +71,9 @@ export class AzureStorageClient {
       const uploadDir = path.join(process.cwd(), 'public', 'uploads');
       await fs.mkdir(uploadDir, { recursive: true });
       await fs.writeFile(path.join(uploadDir, blobName), fileBuffer);
-      return { url: `/uploads/${encodeURIComponent(blobName)}` };
+      return { url: `/api/media/${encodeURIComponent(blobName)}` };
     }
 
-    const cdnBase = process.env.AZURE_STORAGE_CDN_URL;
     const containerClient = await this.getContainer();
     
     await containerClient.createIfNotExists();
@@ -87,9 +86,7 @@ export class AzureStorageClient {
       },
     });
 
-    const url = cdnBase
-      ? `${cdnBase.replace(/\/$/, '')}/${blobName}`
-      : `/api/media/${encodeURIComponent(blobName)}`;
+    const url = `/api/media/${encodeURIComponent(blobName)}`;
 
     return { url };
   }

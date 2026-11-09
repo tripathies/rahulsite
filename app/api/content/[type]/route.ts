@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { DataService } from '@/services/DataService';
+import { toMediaUrls } from '@/lib/mediaUrl';
 import { adventureFixtures, blogFixtures, projectFixtures, videoFixtures } from '@/lib/fixtures';
 
 const defaults = {
@@ -23,7 +24,7 @@ export async function GET(
     return NextResponse.json({ ok: true, data: defaults[contentType], source: 'fixtures' });
   }
   try {
-    const items = await DataService.listItems(contentType);
+    const items = toMediaUrls(await DataService.listItems(contentType));
     const data = items.filter((item) => item.isPublished !== false).map((item) => {
       const publicItem = { ...item };
       delete publicItem._id;

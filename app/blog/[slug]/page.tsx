@@ -100,7 +100,7 @@ export default function BlogSlugPage() {
               </div>
             </div>
 
-            {!post.pdfUrl && post.coverImage && <img src={post.coverImage} alt="" style={{ display: 'block', width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', borderRadius: 12, marginBottom: 40 }} />}
+            {post.coverImage && <img src={post.coverImage} alt="" style={{ display: 'block', maxWidth: '100%', height: 'auto', margin: '0 auto 40px', borderRadius: 12 }} />}
 
             {/* Article Content */}
             {readingUrl ? <DocumentReader key={readingUrl} url={readingUrl} title={post.title} /> : post.pdfUrl ? <p role="status">This article is being prepared for reading.</p> : <ContentBody content={post.content || ''} photos={post.photos} videos={post.videos} />}

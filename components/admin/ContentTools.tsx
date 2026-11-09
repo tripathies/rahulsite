@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Download, Eye, FileText, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { Download, Eye, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { contentFields, contentSchemas, newContentDraft, type ContentType } from '@/lib/content';
 import MediaUploader from './MediaUploader';
-import PdfUploadModal from './PdfUploadModal';
-import BlogComposer from './BlogComposer';
+import ContentComposer from './ContentComposer';
 import { writeContent } from './writeContent';
 import ContentBody from '@/components/sections/ContentBody';
 import styles from './ContentTools.module.css';
@@ -25,7 +24,6 @@ export default function ContentTools({ type, item, source, onChanged, importItem
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [pdfOpen, setPdfOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   if (!session?.user?.isAdmin) return null;
@@ -46,28 +44,12 @@ export default function ContentTools({ type, item, source, onChanged, importItem
     finally { setBusy(false); }
   }
 
-  const isPdfSupportedType = type === 'adventures' || type === 'projects';
+  const isComposerType = type === 'blogs' || type === 'adventures' || type === 'projects';
 
   return <div className={styles.tools}>
     <button type="button" className={styles.button} disabled={busy} title={item ? `Edit ${title}` : 'Create new content'} onClick={() => setOpen(true)}>
       {item ? <Pencil size={16} /> : <Plus size={16} />} {item ? 'Edit' : `New ${type === 'adventures' ? 'travel story' : type === 'blogs' ? 'blog' : type === 'projects' ? 'project' : type === 'videos' ? 'video' : 'profile'}`}
     </button>
-    {isPdfSupportedType && !item && (
-      <button
-        type="button"
-        className={styles.button}
-        disabled={busy}
-        style={{
-          background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.18), rgba(105, 88, 255, 0.22))',
-          borderColor: 'rgba(239, 68, 68, 0.40)',
-          color: '#FCA5A5',
-        }}
-        title={`Upload a PDF or PPT to create a new ${type === 'adventures' ? 'travel story' : 'project'}`}
-        onClick={() => setPdfOpen(true)}
-      >
-        <FileText size={16} style={{ color: '#F87171' }} /> Upload PDF / PPT {type === 'adventures' ? 'Story' : 'Project'}
-      </button>
-    )}
     {item && type !== 'about' && source === 'cosmos' && Boolean(record?.id) && <button type="button" className={styles.icon} disabled={busy} title={`Delete ${title}`} aria-label={`Delete ${title}`} onClick={remove}><Trash2 size={16} /></button>}
     {importableItems && importableItems.length > 0 && source === 'cosmos' && <button type="button" className={styles.button} disabled={busy} onClick={async () => {
       if (!confirm('Copy the existing sample content into Cosmos DB so it can be edited?')) return;
@@ -77,25 +59,16 @@ export default function ContentTools({ type, item, source, onChanged, importItem
       finally { setBusy(false); onChanged(); }
     }}><Download size={16} /> Import existing content</button>}
     {error && <p role="alert" className={styles.error}>{error}</p>}
-    {open && type === 'blogs' && <BlogComposer item={record} existing={source === 'cosmos' && Boolean(record?.id)} onClose={() => setOpen(false)} onSaved={(saved) => {
-      setOpen(false);
-      if (record?.slug && saved.slug !== record.slug && pathname.endsWith(`/${record.slug}`)) router.replace(`/blog/${saved.slug}`);
-      else onChanged();
-    }} />}
-    {open && type !== 'blogs' && <ContentEditor type={type} item={record} existing={source === 'cosmos' && Boolean(record?.id)} onClose={() => setOpen(false)} onSaved={(saved) => {
+    {open && isComposerType && <ContentComposer type={type} item={record} existing={source === 'cosmos' && Boolean(record?.id)} onClose={() => setOpen(false)} onSaved={(saved) => {
       setOpen(false);
       if (record?.slug && saved.slug !== record.slug && pathname.endsWith(`/${record.slug}`)) router.replace(`${pathname.slice(0, pathname.lastIndexOf('/'))}/${saved.slug}`);
       else onChanged();
     }} />}
-    {pdfOpen && isPdfSupportedType && (
-      <PdfUploadModal
-        type={type as 'blogs' | 'adventures' | 'projects'}
-        item={record}
-        isOpen={pdfOpen}
-        onClose={() => setPdfOpen(false)}
-        onSaved={() => onChanged()}
-      />
-    )}
+    {open && !isComposerType && <ContentEditor type={type} item={record} existing={source === 'cosmos' && Boolean(record?.id)} onClose={() => setOpen(false)} onSaved={(saved) => {
+      setOpen(false);
+      if (record?.slug && saved.slug !== record.slug && pathname.endsWith(`/${record.slug}`)) router.replace(`${pathname.slice(0, pathname.lastIndexOf('/'))}/${saved.slug}`);
+      else onChanged();
+    }} />}
   </div>;
 }
 

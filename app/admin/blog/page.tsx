@@ -10,7 +10,7 @@ import {
 import AdminGuard, { getAdminToken } from '@/components/admin/AdminGuard';
 import { blogFixtures, BlogFixture } from '@/lib/fixtures';
 import { isPresentationUrl } from '@/lib/content';
-import BlogComposer from '@/components/admin/BlogComposer';
+import ContentComposer from '@/components/admin/ContentComposer';
 
 // ── Blog List ──────────────────────────────────────────────────────────
 function BlogListContent() {
@@ -66,7 +66,7 @@ function BlogListContent() {
       </header>
 
       {showForm && (
-        <BlogComposer existing={false} onClose={() => setShowForm(false)} onSaved={(post) => {
+        <ContentComposer type="blogs" existing={false} onClose={() => setShowForm(false)} onSaved={(post) => {
           setCmsBlogs((prev) => [post as unknown as BlogFixture, ...prev]);
           setShowForm(false);
         }} />

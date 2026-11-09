@@ -7,7 +7,7 @@ import { Plus, Edit2, Trash2, MapPin, Calendar, ArrowLeft, Search, ChevronRight,
 import AdminGuard, { getAdminToken } from '@/components/admin/AdminGuard';
 import { adventureFixtures, AdventureEntry } from '@/lib/fixtures';
 import { isPresentationUrl } from '@/lib/content';
-import PdfUploadModal from '@/components/admin/PdfUploadModal';
+import ContentComposer from '@/components/admin/ContentComposer';
 
 function AdventuresList() {
   const [cmsEntries, setCmsEntries] = useState<AdventureEntry[]>([]);
@@ -55,7 +55,7 @@ function AdventuresList() {
         </Link>
         <h1 className="adm-title">Adventures</h1>
         <button type="button" onClick={() => setShowPdfModal(true)} className="adm-pdf-btn">
-          <FileText size={15} /> Upload PDF / PPT Story
+          <Plus size={15} /> New Travel Story
         </button>
         <Link href="/admin/adventures/new" className="adm-add-btn">
           <Plus size={15} /> Add Adventure
@@ -64,11 +64,11 @@ function AdventuresList() {
 
       {/* PDF Upload Modal */}
       {showPdfModal && (
-        <PdfUploadModal
+        <ContentComposer
           type="adventures"
-          isOpen={showPdfModal}
+          existing={false}
           onClose={() => setShowPdfModal(false)}
-          onSaved={(item) => setCmsEntries((prev) => [item as unknown as AdventureEntry, ...prev])}
+          onSaved={(item) => { setCmsEntries((prev) => [item as unknown as AdventureEntry, ...prev]); setShowPdfModal(false); }}
         />
       )}
 

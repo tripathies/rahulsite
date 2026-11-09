@@ -6,7 +6,7 @@ import { ArrowLeft, Code2, GitFork, Plus, FileText, Trash2, Loader2, ExternalLin
 import AdminGuard, { getAdminToken } from '@/components/admin/AdminGuard';
 import { projectFixtures, ProjectFixture } from '@/lib/fixtures';
 import { isPresentationUrl } from '@/lib/content';
-import PdfUploadModal from '@/components/admin/PdfUploadModal';
+import ContentComposer from '@/components/admin/ContentComposer';
 
 function ProjectsContent() {
   const [cmsProjects, setCmsProjects] = useState<ProjectFixture[]>([]);
@@ -51,17 +51,17 @@ function ProjectsContent() {
           onClick={() => setShowPdfModal(true)}
           className="apr-pdf-btn"
         >
-          <FileText size={15} /> Upload PDF / PPT Project
+          <Plus size={15} /> New Project
         </button>
       </header>
 
       {/* PDF Upload Modal */}
       {showPdfModal && (
-        <PdfUploadModal
+        <ContentComposer
           type="projects"
-          isOpen={showPdfModal}
+          existing={false}
           onClose={() => setShowPdfModal(false)}
-          onSaved={(item) => setCmsProjects((prev) => [item as unknown as ProjectFixture, ...prev])}
+          onSaved={(item) => { setCmsProjects((prev) => [item as unknown as ProjectFixture, ...prev]); setShowPdfModal(false); }}
         />
       )}
 

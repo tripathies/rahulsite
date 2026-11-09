@@ -3,6 +3,7 @@ import { DataService } from '@/services/DataService';
 import { getAdminSession } from '@/lib/auth';
 import { contentSchemas, type ContentType } from '@/lib/content';
 import { randomUUID } from 'node:crypto';
+import { toMediaUrls } from '@/lib/mediaUrl';
 import {
   adventureFixtures,
   blogFixtures,
@@ -44,7 +45,7 @@ export async function GET(
   }
 
   try {
-    const data = await DataService.listItems(type);
+    const data = toMediaUrls(await DataService.listItems(type));
     return NextResponse.json({ ok: true, data, source: 'cosmos' });
   } catch (err: any) {
     return NextResponse.json({ ok: false, error: 'Cosmos DB is unavailable. ' + (err?.message || 'Unknown error') }, { status: 503 });
